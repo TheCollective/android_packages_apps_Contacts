@@ -198,7 +198,7 @@ public class ContactLoader extends AsyncTaskLoader<ContactLoader.Result> {
         }
 
         /**
-         * Constructor to call when contact was found
+         * Constructor to call when contact was found  
          */
         private Result(Uri requestedUri, Uri uri, Uri lookupUri, long directoryId, String lookupKey,
                 long id, long nameRawContactId, int displayNameSource, long photoId,

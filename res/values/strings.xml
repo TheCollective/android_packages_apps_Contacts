@@ -189,10 +189,10 @@
     <string name="contactsJoinedMessage">Contacts joined</string>
 
     <!-- Menu item that opens the Options activity for a given contact [CHAR LIMIT=15] -->
-    <string name="menu_set_ring_tone">Set ringtone</string>
+    <string name="menu_set_ring_tone">Set Ringtone</string>
 
     <!-- Menu item that opens the Options activity for a given contact [CHAR LIMIT=15] -->
-    <string name="menu_set_vib_ration">Set vibration</string>
+    <string name="menu_set_vib_ration">Set Vibration</string>
 
     <!-- Menu item that opens the Options activity for a given contact [CHAR LIMIT=30] -->
     <string name="menu_redirect_calls_to_vm">All calls to voicemail</string>
