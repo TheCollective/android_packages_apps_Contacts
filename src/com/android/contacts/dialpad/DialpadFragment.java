@@ -26,6 +26,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.ContentObserver;
@@ -86,9 +87,9 @@ import com.android.contacts.ContactsUtils;
 import com.android.contacts.R;
 import com.android.contacts.SpecialCharSequenceMgr;
 import com.android.contacts.activities.DialtactsActivity;
-import com.android.contacts.dialpad.T9Search.ContactItem;
-import com.android.contacts.dialpad.T9Search.T9Adapter;
-import com.android.contacts.dialpad.T9Search.T9SearchResult;
+import com.android.contacts.dialpad.T9SearchCache.ContactItem;
+import com.android.contacts.dialpad.T9SearchCache.T9Adapter;
+import com.android.contacts.dialpad.T9SearchCache.T9SearchResult;
 import com.android.contacts.util.Constants;
 import com.android.contacts.util.PhoneNumberFormatter;
 import com.android.contacts.util.StopWatch;
@@ -148,8 +149,14 @@ public class DialpadFragment extends Fragment
     private ListView mDialpadChooser;
     private DialpadChooserAdapter mDialpadChooserAdapter;
 
-    private static T9Search sT9Search; // Static to avoid reloading when class is destroyed and recreated
-    private ContactPhotoManager mPhotoLoader;
+    private T9SearchCache mT9Search;
+    private T9SearchCache.Callback mT9Callback = new T9SearchCache.Callback() {
+        @Override
+        public void onLoadFinished() {
+            searchContacts();
+        }
+    };
+
     private ToggleButton mT9Toggle;
     private ListView mT9List;
     private ListView mT9ListTop;
@@ -157,7 +164,6 @@ public class DialpadFragment extends Fragment
     private T9Adapter mT9AdapterTop;
     private ViewSwitcher mT9Flipper;
     private LinearLayout mT9Top;
-    private boolean mContactsUpdated;
 
     /**
      * Regular expression prohibiting manual phone call. Can be empty, which means "no rule".
@@ -269,8 +275,10 @@ public class DialpadFragment extends Fragment
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
-        mPhotoLoader = ContactPhotoManager.getInstance(getActivity());
-        mPhotoLoader.preloadPhotosInBackground();
+
+        ContactPhotoManager photoLoader = ContactPhotoManager.getInstance(getActivity());
+        photoLoader.preloadPhotosInBackground();
+
         mCurrentCountryIso = ContactsUtils.getCurrentCountryIso(getActivity());
 
         try {
@@ -312,8 +320,9 @@ public class DialpadFragment extends Fragment
         mDigits.setOnLongClickListener(this);
         mDigits.addTextChangedListener(this);
 
+        mT9Search = T9SearchCache.getInstance(getActivity());
         mT9List = (ListView) fragmentView.findViewById(R.id.t9list);
-        if (mT9List!= null) {
+        if (mT9List != null) {
             mT9List.setOnItemClickListener(this);
         }
         mT9ListTop = (ListView) fragmentView.findViewById(R.id.t9listtop);
@@ -339,7 +348,9 @@ public class DialpadFragment extends Fragment
         int cellCount = dm.widthPixels / minCellSize;
         int fakeMenuItemWidth = dm.widthPixels / cellCount;
         mDialButtonContainer = fragmentView.findViewById(R.id.dialButtonContainer);
-        if (mDialButtonContainer != null) {
+        // If in portrait, add padding to the dial button since we need space for the
+        // search and menu/overflow buttons.
+        if (mDialButtonContainer != null && !ContactsUtils.isLandscape(this.getActivity())) {
             mDialButtonContainer.setPadding(
                     fakeMenuItemWidth, mDialButtonContainer.getPaddingTop(),
                     fakeMenuItemWidth, mDialButtonContainer.getPaddingBottom());
@@ -544,27 +555,6 @@ public class DialpadFragment extends Fragment
 
         final StopWatch stopWatch = StopWatch.start("Dialpad.onResume");
 
-        if ((sT9Search == null && isT9On()) || mContactsUpdated) {
-            Thread loadContacts = new Thread(new Runnable() {
-                public void run () {
-                    sT9Search = new T9Search(getActivity());
-                }
-            });
-            loadContacts.start();
-            if (mContactsUpdated) {
-                mContactsUpdated = false;
-                onLongClick(mDelete);
-                mT9Adapter = null;
-                mT9AdapterTop = null;
-                mT9ListTop.setAdapter(mT9AdapterTop);
-                mT9List.setAdapter(mT9Adapter);
-            }
-        }
-
-        if (isT9On()) {
-            getActivity().getContentResolver().unregisterContentObserver(mContactObserver);
-        }
-
         hideT9();
 
         // Query the last dialed number. Do it first because hitting
@@ -673,16 +663,22 @@ public class DialpadFragment extends Fragment
         // TODO: I wonder if we should not check if the AsyncTask that
         // lookup the last dialed number has completed.
         mLastNumberDialed = EMPTY_NUMBER;  // Since we are going to query again, free stale number.
-        if (isT9On()) {
-            getActivity().getContentResolver().registerContentObserver(
-                    ContactsContract.Contacts.CONTENT_URI, true, mContactObserver);
-        }
         SpecialCharSequenceMgr.cleanup();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        if (isT9On()) {
+            mT9Search.refresh(mT9Callback);
+        }
     }
 
     @Override
     public void onStop() {
         super.onStop();
+        mT9Search.cancelRefresh(mT9Callback);
         if (mClearDigitsOnStop) {
             mClearDigitsOnStop = false;
             mDigits.getText().clear();
@@ -698,8 +694,10 @@ public class DialpadFragment extends Fragment
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        final boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
-        if ((ViewConfiguration.get(getActivity()).hasPermanentMenuKey() || isLandscape) &&
+        // Landscape dialer uses the real actionbar menu, whereas portrait uses a fake one
+        // that is created using constructPopupMenu()
+        if (ContactsUtils.isLandscape(this.getActivity()) ||
+                ViewConfiguration.get(getActivity()).hasPermanentMenuKey() &&
                 isLayoutReady() && mDialpadChooser != null) {
             inflater.inflate(R.menu.dialpad_options, menu);
         }
@@ -709,9 +707,10 @@ public class DialpadFragment extends Fragment
     public void onPrepareOptionsMenu(Menu menu) {
         final boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
         // Hardware menu key should be available and Views should already be ready.
-        if ((ViewConfiguration.get(getActivity()).hasPermanentMenuKey() || isLandscape) &&
+        if (ContactsUtils.isLandscape(this.getActivity()) ||
+                ViewConfiguration.get(getActivity()).hasPermanentMenuKey() &&
                 isLayoutReady() && mDialpadChooser != null) {
-             setupMenuItems(menu);
+            setupMenuItems(menu);
         }
     }
 
@@ -836,48 +835,50 @@ public class DialpadFragment extends Fragment
      * Toggles view visibility based on results
      */
     private void searchContacts() {
-        if (!isT9On())
+        if (!isT9On()) {
             return;
+        }
+
         final int length = mDigits.length();
         if (length > 0) {
-            if (sT9Search != null) {
-                T9SearchResult result = sT9Search.search(mDigits.getText().toString());
-                if (mT9AdapterTop == null) {
-                    mT9AdapterTop = sT9Search.new T9Adapter(getActivity(), 0, new ArrayList<ContactItem>(), getActivity().getLayoutInflater(), mPhotoLoader);
-                    mT9AdapterTop.setNotifyOnChange(true);
+            T9SearchResult result = mT9Search.search(mDigits.getText().toString());
+            if (mT9AdapterTop == null) {
+                mT9AdapterTop = mT9Search.createT9Adapter(getActivity(), new ArrayList<ContactItem>());
+                mT9AdapterTop.setNotifyOnChange(true);
+            } else {
+                mT9AdapterTop.clear();
+            }
+
+            if (result != null) {
+                if (mT9Adapter == null) {
+                    mT9Adapter = mT9Search.createT9Adapter(getActivity(), result.getResults());
+                    mT9Adapter.setNotifyOnChange(true);
                 } else {
-                    mT9AdapterTop.clear();
+                    mT9Adapter.clear();
+                    mT9Adapter.addAll(result.getResults());
                 }
-                if (result != null) {
-                    if (mT9Adapter == null) {
-                        mT9Adapter = sT9Search.new T9Adapter(getActivity(), 0, result.getResults(),getActivity().getLayoutInflater(), mPhotoLoader);
-                        mT9Adapter.setNotifyOnChange(true);
-                    } else {
-                        mT9Adapter.clear();
-                        mT9Adapter.addAll(result.getResults());
-                    }
-                    if (mT9List.getAdapter() == null) {
-                        mT9List.setAdapter(mT9Adapter);
-                    }
-                    mT9AdapterTop.add(result.getTopContact());
-                    if (result.getNumResults() > 1) {
-                        mT9Toggle.setVisibility(View.VISIBLE);
-                    } else {
-                        mT9Toggle.setVisibility(View.GONE);
-                        toggleT9();
-                    }
-                    mT9Toggle.setTag(null);
+                if (mT9List.getAdapter() == null) {
+                    mT9List.setAdapter(mT9Adapter);
+                }
+                mT9AdapterTop.add(result.getTopContact());
+                if (result.getNumResults() > 1) {
+                    mT9Toggle.setVisibility(View.VISIBLE);
                 } else {
-                    ((ContactItem) mT9ListTop.getTag()).number = mDigits.getText().toString();
-                    mT9AdapterTop.add((ContactItem) mT9ListTop.getTag());
-                    mT9Toggle.setTag(new Boolean(true));
                     mT9Toggle.setVisibility(View.GONE);
                     toggleT9();
                 }
-                mT9ListTop.setVisibility(View.VISIBLE);
-                if (mT9ListTop.getAdapter() == null) {
-                    mT9ListTop.setAdapter(mT9AdapterTop);
-                }
+                mT9Toggle.setTag(null);
+            } else {
+                ContactItem contact = (ContactItem) mT9ListTop.getTag();
+                contact.number = mDigits.getText().toString();
+                mT9AdapterTop.add(contact);
+                mT9Toggle.setTag(new Boolean(true));
+                mT9Toggle.setVisibility(View.GONE);
+                toggleT9();
+            }
+            mT9ListTop.setVisibility(View.VISIBLE);
+            if (mT9ListTop.getAdapter() == null) {
+                mT9ListTop.setAdapter(mT9AdapterTop);
             }
         } else {
             mT9ListTop.setVisibility(View.INVISIBLE);
