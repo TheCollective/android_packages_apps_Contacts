@@ -1039,6 +1039,7 @@ public class DialtactsActivity extends TransactionSafeActivity
             // If a permanent menu key is available, then we need to show the call settings item
             // so that the call settings item can be invoked by the permanent menu key.
             callSettingsMenuItem.setVisible(ViewConfiguration.get(this).hasPermanentMenuKey());
+            emptyRightMenuItem.setVisible(false);
         }
     }
 
