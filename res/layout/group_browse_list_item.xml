@@ -55,14 +55,13 @@
         android:paddingBottom="8dip"
         android:orientation="vertical"
         android:duplicateParentState="true"
-        android:background="#616161">
+        android:background="@drawable/group_list_item_background">
 
         <TextView
             android:id="@+id/label"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-	    android:textColor="@color/primary_text_color"
             android:ellipsize="end"
             android:singleLine="true" />
 
@@ -71,7 +70,7 @@
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:textAppearance="?android:attr/textAppearanceSmall"
-            android:textColor="@color/secondary_text_color"
+            android:textColor="?android:attr/textColorSecondary"
             android:ellipsize="end"
             android:singleLine="true" />
 

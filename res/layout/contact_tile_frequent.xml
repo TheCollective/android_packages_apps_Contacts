@@ -17,7 +17,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     class="com.android.contacts.list.ContactTileFrequentView"
     android:focusable="true"
-    android:background="#616161"
+    android:background="?android:attr/selectableItemBackground"
     android:nextFocusRight="@+id/contact_tile_quick">
 
     <RelativeLayout
@@ -57,7 +57,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="@color/secondary_text_color"
+                android:textColor="?android:attr/textColorSecondary"
                 android:singleLine="true"
                 android:drawablePadding="4dip"
                 android:fadingEdge="horizontal"
