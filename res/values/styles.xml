@@ -96,6 +96,7 @@
     </style>
 
     <style name="DetailActivityTheme" parent="@android:style/Theme.Holo.Light.DarkActionBar">
+        <item name="android:windowBackground">@drawable/background_dial_holo_dark</item>
         <item name="android:actionBarStyle">@style/ContactsActionBarStyle</item>
         <item name="android:actionBarItemBackground">@drawable/action_bar_item_background</item>
         <item name="android:actionBarWidgetTheme">@style/ContactsActionBarTheme</item>
@@ -146,6 +147,7 @@
         <item name="android:actionDropDownStyle">@style/ContactsActionBarDropDownStyle</item>
         <item name="android:textColorPrimary">@color/primary_text_color</item>
         <item name="android:textColorSecondary">@color/secondary_text_color</item>
+        <item name="android:windowBackground">@drawable/background_dial_holo_dark</item>
         <item name="android:listViewStyle">@style/ListViewStyle</item>
     </style>
 
