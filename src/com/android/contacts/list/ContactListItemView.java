@@ -16,6 +16,8 @@
 
 package com.android.contacts.list;
 
+import com.android.contacts.preference.ContactsPreferences;
+
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
