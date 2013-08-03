@@ -25,8 +25,7 @@ import android.provider.ContactsContract.Directory;
 import android.provider.ContactsContract.DisplayNameSources;
 
 import com.android.contacts.GroupMetaData;
-import com.android.contacts.model.account.AccountType;
-import com.android.contacts.model.dataitem.DataItem;
+import com.android.contacts.common.model.account.AccountType;
 import com.android.contacts.util.DataStatus;
 import com.android.contacts.util.StreamItemEntry;
 import com.google.common.annotations.VisibleForTesting;
@@ -88,7 +87,6 @@ public class Contact {
     private byte[] mPhotoBinaryData;
     private final boolean mSendToVoicemail;
     private final String mCustomRingtone;
-    private final String mCustomNotification;
     private final boolean mIsUserProfile;
 
     private final Contact.Status mStatus;
@@ -124,7 +122,6 @@ public class Contact {
         mInvitableAccountTypes = null;
         mSendToVoicemail = false;
         mCustomRingtone = null;
-        mCustomNotification = null;
         mIsUserProfile = false;
     }
 
@@ -143,7 +140,7 @@ public class Contact {
             long id, long nameRawContactId, int displayNameSource, long photoId,
             String photoUri, String displayName, String altDisplayName, String phoneticName,
             boolean starred, Integer presence, boolean sendToVoicemail, String customRingtone,
-            String customNotification, boolean isUserProfile) {
+            boolean isUserProfile) {
         mStatus = Status.LOADED;
         mException = null;
         mRequestedUri = requestedUri;
@@ -167,7 +164,6 @@ public class Contact {
         mInvitableAccountTypes = null;
         mSendToVoicemail = sendToVoicemail;
         mCustomRingtone = customRingtone;
-        mCustomNotification = customNotification;
         mIsUserProfile = isUserProfile;
     }
 
@@ -206,7 +202,6 @@ public class Contact {
         mPhotoBinaryData = from.mPhotoBinaryData;
         mSendToVoicemail = from.mSendToVoicemail;
         mCustomRingtone = from.mCustomRingtone;
-        mCustomNotification = from.mCustomNotification;
         mIsUserProfile = from.mIsUserProfile;
     }
 
@@ -393,7 +388,7 @@ public class Contact {
 
         // Iterate through raw-contacts; if we find a writable on, return its ID.
         for (RawContact rawContact : getRawContacts()) {
-            AccountType accountType = rawContact.getAccountType();
+            AccountType accountType = rawContact.getAccountType(context);
             if (accountType != null && accountType.areContactsWritable()) {
                 return rawContact.getId();
             }
@@ -433,10 +428,7 @@ public class Contact {
         }
 
         RawContact rawContact = mRawContacts.get(0);
-        ArrayList<ContentValues> result = new ArrayList<ContentValues>();
-        for (DataItem dataItem : rawContact.getDataItems()) {
-            result.add(dataItem.getContentValues());
-        }
+        ArrayList<ContentValues> result = rawContact.getContentValues();
 
         // If the photo was loaded using the URI, create an entry for the photo
         // binary data.
@@ -465,10 +457,6 @@ public class Contact {
 
     public String getCustomRingtone() {
         return mCustomRingtone;
-    }
-
-    public String getCustomNotification() {
-        return mCustomNotification;
     }
 
     public boolean isUserProfile() {
