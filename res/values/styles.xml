@@ -30,7 +30,7 @@
         <item name="android:actionBarItemBackground">@drawable/action_bar_item_background</item>
         <item name="android:actionBarWidgetTheme">@style/ContactsActionBarTheme</item>
         <item name="android:windowContentOverlay">@null</item>
-        <item name="android:textColorPrimary">@color/primary_text_color</item>
+        <item name="android:textColorPrimary">@color/people_app_theme_color</item>
         <item name="android:textColorSecondary">@color/secondary_text_color</item>
         <item name="android:listViewStyle">@style/ListViewStyle</item>
     </style>
