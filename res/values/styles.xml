@@ -58,6 +58,7 @@
         <item name="android:actionDropDownStyle">@style/ContactsActionBarDropDownStyle</item>
         <item name="android:textColorPrimary">@color/primary_text_color</item>
         <item name="android:textColorSecondary">@color/secondary_text_color</item>
+        <item name="android:windowBackground">@drawable/background_holo_dark</item>
         <item name="android:listViewStyle">@style/ListViewStyle</item>
     </style>
 
