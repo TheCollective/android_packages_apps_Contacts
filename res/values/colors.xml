@@ -16,7 +16,7 @@
 <resources>
 
     <color name="quickcontact_list_divider">#ffcdcdcd</color>
-    <color name="quickcontact_list_background">#ffe2e2e2</color>
+    <color name="quickcontact_list_background">#ffff8e00</color>
     <color name="quickcontact_tab_indicator">#ff616161</color>
 
     <!-- Color of the background of the contact detail and editor pages -->
