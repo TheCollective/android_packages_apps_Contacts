@@ -23,7 +23,7 @@
     <color name="quickcontact_name_detail_background">#66000000</color>
 
     <!-- Color of the background of the contact detail and editor pages -->
-    <color name="background_primary">@android:drawable/background_holo_dark</color>
+    <color name="background_primary">@drawable/background_holo_dark</color>
 
     <color name="background_social_updates">#ff000000</color>
 
