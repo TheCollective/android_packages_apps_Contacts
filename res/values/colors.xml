@@ -16,7 +16,6 @@
 <resources>
 
     <color name="quickcontact_list_divider">#ffcdcdcd</color>
-<<<<<<< HEAD
     <color name="quickcontact_list_background">#ff000000</color>
     <color name="quickcontact_tab_indicator">#ffc6c6c6</color>
     <color name="quickcontact_track_background">#ff000000</color>
